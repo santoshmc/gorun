@@ -1,0 +1,26 @@
+{
+  "name": "GoRun — monthly running goals",
+  "short_name": "GoRun",
+  "description": "Set a monthly running distance goal, get a weekly training plan, and track every run. Works offline, stores everything on your device.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fff8f2",
+  "theme_color": "#fff8f2",
+  "categories": ["health", "fitness", "lifestyle"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

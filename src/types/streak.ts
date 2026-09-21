@@ -1,0 +1,1 @@
+export interface StreakData { current: number; longest: number; lastCompletedDate?: string; }

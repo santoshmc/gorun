@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GoRun — test suite</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      body { padding: 24px; }
+      .suite { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+      .t { display: flex; gap: 10px; align-items: baseline; padding: 6px 10px; border-radius: 8px; font-size: 0.86rem; }
+      .t--pass { background: color-mix(in srgb, var(--c-green) 35%, #fff); }
+      .t--fail { background: color-mix(in srgb, var(--c-coral) 35%, #fff); }
+      .t__name { font-weight: 700; flex: 1; }
+      .t__detail { color: var(--ink-soft); font-size: 0.78rem; }
+      .grp { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); font-weight: 800; margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="suite">
+      <h1>GoRun test suite</h1>
+      <p class="empty__text">
+        Open this file in a browser — no build step, no package manager. It exercises the domain logic and the
+        action layer against the acceptance criteria in <code>docs/stories/</code>.
+      </p>
+      <div id="summary"></div>
+      <div id="results"></div>
+    </div>
+
+    <!-- The UI modules are deliberately not loaded: these tests cover logic, not rendering. -->
+    <div id="toast-root" hidden></div>
+    <div id="dialog-root" hidden></div>
+    <div id="fx-root" hidden></div>
+
+    <script src="app.core.js"></script>
+    <script src="app.domain.js"></script>
+    <script src="app.store.js"></script>
+    <script>
+      (function () {
+        'use strict';
+        var D = GR.domain;
+        var results = [];
+        var group = '';
+
+        function describe(name) {
+          group = name;
+        }
+
+        function it(name, fn) {
+          try {
+            var detail = fn();
+            results.push({ group: group, name: name, pass: true, detail: detail || '' });
+          } catch (err) {
+            results.push({ group: group, name: name, pass: false, detail: err.message });
+          }
+        }
+
+        function assert(cond, message) {
+          if (!cond) throw new Error(message || 'assertion failed');
+        }
+
+        function eq(actual, expected, message) {
+          if (actual !== expected) {
+            throw new Error((message || 'expected') + ' — got ' + JSON.stringify(actual) + ', expected ' + JSON.stringify(expected));
+          }
+        }
+
+        function near(actual, expected, tolerance, message) {
+          if (Math.abs(actual - expected) > (tolerance || 0.05)) {
+            throw new Error((message || 'expected') + ' — got ' + actual + ', expected ~' + expected);
+          }
+        }
+
+        function reset() {
+          try { localStorage.removeItem(GR.storage.STORAGE_KEY); } catch (e) { /* ignore */ }
+          GR.storage.reset();
+          GR.select.invalidate();
+        }
+
+        var MK = D.currentMonthKey();
+
+        /* ---------------------------------------------------------- units */
+        describe('Distance and units');
+        it('converts miles to kilometres', function () { near(D.toKm(10, 'mi'), 16.09, 0.01); });
+        it('converts kilometres to miles', function () { near(D.fromKm(16.09344, 'mi'), 10, 0.01); });
+        it('formats to at most one decimal', function () { eq(D.formatKm(12.349, 'km'), '12.3 km'); });
+        it('formats whole numbers without a decimal', function () { eq(D.formatKm(12, 'km'), '12 km'); });
+        it('caps the mile target below the km target', function () { assert(D.maxTargetDistance('mi') < D.maxTargetDistance('km')); });
+        it('formats pace per selected unit', function () { eq(D.formatPace(5, 'km'), '5:00 /km'); });
+        it('formats durations', function () { eq(D.formatDuration(3661), '1h 01m'); });
+        it('parses mm:ss durations', function () { eq(D.parseDurationInput('25:30'), 1530); });
+        it('parses hh:mm:ss durations', function () { eq(D.parseDurationInput('1:00:00'), 3600); });
+        it('parses plain minutes', function () { eq(D.parseDurationInput('30'), 1800); });
+        it('rejects nonsense durations', function () { eq(D.parseDurationInput('abc'), null); });
+
+        /* --------------------------------------------------------- months */
+        describe('Months and dates');
+        it('validates month keys', function () { assert(D.isValidMonthKey('2026-09') && !D.isValidMonthKey('2026-13')); });
+        it('adds months across a year boundary', function () { eq(D.addMonths('2026-12', 1), '2027-01'); });
+        it('counts days in February of a leap year', function () { eq(D.daysInMonth('2024-02'), 29); });
+        it('detects past months', function () { assert(D.isPastMonth('2000-01') && !D.isPastMonth(MK)); });
+        it('lists selectable months starting from now', function () { eq(D.selectableMonths(3)[0], MK); });
+        it('round-trips a date key', function () { eq(D.toDateKey(D.parseDateKey('2026-09-21')), '2026-09-21'); });
+        it('adds days across a month boundary', function () { eq(D.addDays('2026-09-30', 1), '2026-10-01'); });
+
+        /* ----------------------------------------------------- validation */
+        describe('Goal validation (story 1)');
+        it('rejects an empty distance', function () {
+          var r = D.validateGoalInput({ monthKey: MK, targetDistance: '', unit: 'km' });
+          assert(!r.ok && r.errors.targetDistance);
+        });
+        it('rejects two decimal places', function () {
+          assert(!D.validateGoalInput({ monthKey: MK, targetDistance: '10.25', unit: 'km' }).ok);
+        });
+        it('rejects zero and negatives', function () {
+          assert(!D.validateGoalInput({ monthKey: MK, targetDistance: '0', unit: 'km' }).ok);
+        });
+        it('rejects a past month', function () {
+          assert(!D.validateGoalInput({ monthKey: '2000-01', targetDistance: '50', unit: 'km' }).ok);
+        });
+        it('rejects an implausible distance', function () {
+          assert(!D.validateGoalInput({ monthKey: MK, targetDistance: '99999', unit: 'km' }).ok);
+        });
+        it('accepts a valid goal and normalises to km', function () {
+          var r = D.validateGoalInput({ monthKey: MK, targetDistance: '10', unit: 'mi' });
+          assert(r.ok);
+          near(r.value.targetKm, 16.1, 0.05);
+        });
+
+        describe('Activity validation (story 6)');
+        it('rejects a future date', function () {
+          var r = D.validateActivityInput({ date: D.addDays(D.todayKey(), 1), distance: '5', duration: '25:00' }, 'km');
+          assert(!r.ok && r.errors.date);
+        });
+        it('rejects a zero distance', function () {
+          assert(!D.validateActivityInput({ date: D.todayKey(), distance: '0', duration: '25:00' }, 'km').ok);
+        });
+        it('accepts a valid entry', function () {
+          assert(D.validateActivityInput({ date: D.todayKey(), distance: '5', duration: '25:00' }, 'km').ok);
+        });
+
+        /* -------------------------------------------------- training plan */
+        describe('Training plan (stories 2 and 3)');
+        it('totals exactly the monthly target', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          eq(D.planTotals(p).monthlyTotal, 100);
+        });
+        it('honours the requested number of run days', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 5, style: 'even' });
+          eq(p.weeks[0].days.filter(function (d) { return d.type === 'run'; }).length, 5);
+        });
+        it('marks rest days explicitly', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 3, style: 'even' });
+          assert(p.weeks[0].days.some(function (d) { return d.type === 'rest'; }));
+        });
+        it('splits evenly in the even style', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          var runs = p.weeks[0].days.filter(function (d) { return d.type === 'run'; }).map(function (d) { return d.distanceKm; });
+          near(Math.max.apply(null, runs) - Math.min.apply(null, runs), 0, 0.2);
+        });
+        it('builds to a long run in the progressive style', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'progressive' });
+          var runs = p.weeks[0].days.filter(function (d) { return d.type === 'run'; }).map(function (d) { return d.distanceKm; });
+          assert(Math.max.apply(null, runs) > Math.min.apply(null, runs) * 1.3);
+        });
+        it('covers the whole month', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          var last = p.weeks[p.weeks.length - 1];
+          eq(last.endDate, MK + '-' + GR.pad2(D.daysInMonth(MK)));
+        });
+        it('detects a mismatch after an edit', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          var day = p.weeks[0].days.filter(function (d) { return d.type === 'run'; })[0];
+          var edited = D.setDayDistance(p, day.date, day.distanceKm + 10);
+          var m = D.planMismatch(edited, 100);
+          assert(m.isMismatch);
+          near(m.difference, 10, 0.2);
+        });
+        it('reports no mismatch for an untouched plan', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          assert(!D.planMismatch(p, 100).isMismatch);
+        });
+        it('turns a run day into a rest day and back', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          var day = p.weeks[0].days.filter(function (d) { return d.type === 'run'; })[0];
+          var rested = D.toggleDayType(p, day.date);
+          eq(D.findDay(rested, day.date).day.type, 'rest');
+          eq(D.findDay(D.toggleDayType(rested, day.date), day.date).type || 'run', 'run');
+        });
+        it('moves a run onto a rest day', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          var run = p.weeks[0].days.filter(function (d) { return d.type === 'run'; })[0];
+          var rest = p.weeks[0].days.filter(function (d) { return d.type === 'rest'; })[0];
+          var moved = D.moveDay(p, run.date, rest.date);
+          eq(D.findDay(moved, rest.date).day.type, 'run');
+          eq(D.findDay(moved, run.date).day.type, 'rest');
+          near(D.planTotals(moved).monthlyTotal, 100, 0.2);
+        });
+        it('regenerates back to the original schedule', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          var day = p.weeks[0].days.filter(function (d) { return d.type === 'run'; })[0];
+          var edited = D.setDayDistance(p, day.date, 99);
+          eq(D.planTotals(D.regeneratePlan(edited)).monthlyTotal, 100);
+        });
+
+        /* ------------------------------------------------- classification */
+        describe('Classification (story 7)');
+        it('trusts a provider run label', function () { eq(D.classifyActivity({ providerType: 'Trail Run' }), 'run'); });
+        it('trusts a provider walk label', function () { eq(D.classifyActivity({ providerType: 'Walking' }), 'walk'); });
+        it('treats cycling as other', function () { eq(D.classifyActivity({ providerType: 'Cycling' }), 'other'); });
+        it('falls back to pace for a run', function () { eq(D.classifyActivity({ paceMinPerKm: 5.5 }), 'run'); });
+        it('falls back to pace for a walk', function () { eq(D.classifyActivity({ paceMinPerKm: 12 }), 'walk'); });
+        it('returns other with no signal at all', function () { eq(D.classifyActivity({}), 'other'); });
+        it('computes pace and speed', function () {
+          near(D.calculatePace(5, 1500), 5, 0.01);
+          near(D.calculateSpeed(5, 1500), 12, 0.01);
+        });
+        it('counts only runs toward totals', function () {
+          var acts = [
+            D.buildActivity({ date: MK + '-01', distanceKm: 5, durationSec: 1500, type: 'run' }),
+            D.buildActivity({ date: MK + '-01', distanceKm: 3, durationSec: 2400, type: 'walk' })
+          ];
+          eq(D.runKmBetween(acts, MK + '-01', MK + '-28'), 5);
+        });
+
+        /* ------------------------------------------------------ de-duping */
+        describe('Import de-duplication (story 5)');
+        it('spots the same session from a second provider', function () {
+          var a = D.buildActivity({ date: MK + '-02', distanceKm: 8, durationSec: 2400, provider: 'strava', externalId: 's1' });
+          var b = D.buildActivity({ date: MK + '-02', distanceKm: 8, durationSec: 2400, provider: 'garmin', externalId: 'g1' });
+          assert(D.isDuplicate(b, [a]));
+        });
+        it('keeps genuinely different sessions', function () {
+          var a = D.buildActivity({ date: MK + '-02', distanceKm: 8, durationSec: 2400, provider: 'strava', externalId: 's1' });
+          var b = D.buildActivity({ date: MK + '-03', distanceKm: 8, durationSec: 2400, provider: 'strava', externalId: 's2' });
+          assert(!D.isDuplicate(b, [a]));
+        });
+        it('returns a stable feed for the same provider and month', function () {
+          var one = D.fetchProviderActivities('strava', MK);
+          var two = D.fetchProviderActivities('strava', MK);
+          eq(JSON.stringify(one), JSON.stringify(two));
+        });
+        it('never reports a future activity', function () {
+          var today = D.todayKey();
+          assert(D.fetchProviderActivities('strava', MK).every(function (a) { return a.date <= today; }));
+        });
+        it('reports unavailable metrics as null, never zero', function () {
+          assert(D.fetchProviderActivities('apple-health', MK).every(function (a) { return a.strideM === null; }));
+        });
+
+        /* ------------------------------------------------------- progress */
+        describe('Progress (stories 9, 10, 11)');
+        it('marks a day complete only when the target is met', function () {
+          var day = { date: MK + '-05', label: 'Mon', type: 'run', distanceKm: 5 };
+          var short = [D.buildActivity({ date: MK + '-05', distanceKm: 4, durationSec: 1200, type: 'run' })];
+          var met = [D.buildActivity({ date: MK + '-05', distanceKm: 5, durationSec: 1500, type: 'run' })];
+          assert(!D.dailyCompletion(day, short).complete);
+          assert(D.dailyCompletion(day, met).complete);
+        });
+        it('reports the shortfall on an incomplete day', function () {
+          var day = { date: MK + '-05', label: 'Mon', type: 'run', distanceKm: 5 };
+          near(D.dailyCompletion(day, [D.buildActivity({ date: MK + '-05', distanceKm: 4, durationSec: 1200, type: 'run' })]).shortfallKm, 1);
+        });
+        it('never treats a rest day as a shortfall', function () {
+          eq(D.dailyCompletion({ date: MK + '-05', label: 'Mon', type: 'rest' }, []).shortfallKm, 0);
+        });
+        it('excludes walks from daily actuals', function () {
+          var day = { date: MK + '-05', label: 'Mon', type: 'run', distanceKm: 5 };
+          eq(D.dailyCompletion(day, [D.buildActivity({ date: MK + '-05', distanceKm: 9, durationSec: 5400, type: 'walk' })]).actualKm, 0);
+        });
+        it('computes monthly percentage and remaining distance', function () {
+          var acts = [D.buildActivity({ date: MK + '-03', distanceKm: 25, durationSec: 7500, type: 'run' })];
+          var m = D.monthProgress({ monthKey: MK, targetKm: 100 }, acts);
+          eq(m.percent, 25);
+          eq(m.remainingKm, 75);
+          assert(!m.achieved);
+        });
+        it('marks a monthly goal as achieved', function () {
+          var acts = [D.buildActivity({ date: MK + '-03', distanceKm: 100, durationSec: 30000, type: 'run' })];
+          assert(D.monthProgress({ monthKey: MK, targetKm: 100 }, acts).achieved);
+        });
+        it('aggregates a week', function () {
+          var p = D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' });
+          var wp = D.weekProgress(p.weeks[0], []);
+          near(wp.plannedKm, 25, 0.2);
+          eq(wp.actualKm, 0);
+          eq(wp.daysPlanned, 4);
+        });
+
+        /* -------------------------------------------------------- streaks */
+        describe('Streaks (story 12)');
+        it('counts consecutive completed planned runs', function () {
+          var plan = { weeks: [{ index: 1, days: [
+            { date: '2000-01-01', type: 'run', distanceKm: 5 },
+            { date: '2000-01-02', type: 'run', distanceKm: 5 },
+            { date: '2000-01-03', type: 'run', distanceKm: 5 }
+          ] }] };
+          var acts = ['2000-01-01', '2000-01-02', '2000-01-03'].map(function (d) {
+            return D.buildActivity({ date: d, distanceKm: 5, durationSec: 1500, type: 'run' });
+          });
+          eq(D.calculateStreak({ '2000-01': plan }, acts).current, 3);
+        });
+        it('does not let a rest day break the streak', function () {
+          var plan = { weeks: [{ index: 1, days: [
+            { date: '2000-01-01', type: 'run', distanceKm: 5 },
+            { date: '2000-01-02', type: 'rest' },
+            { date: '2000-01-03', type: 'run', distanceKm: 5 }
+          ] }] };
+          var acts = ['2000-01-01', '2000-01-03'].map(function (d) {
+            return D.buildActivity({ date: d, distanceKm: 5, durationSec: 1500, type: 'run' });
+          });
+          eq(D.calculateStreak({ '2000-01': plan }, acts).current, 2);
+        });
+        it('resets the streak on a missed planned run', function () {
+          var plan = { weeks: [{ index: 1, days: [
+            { date: '2000-01-01', type: 'run', distanceKm: 5 },
+            { date: '2000-01-02', type: 'run', distanceKm: 5 },
+            { date: '2000-01-03', type: 'run', distanceKm: 5 }
+          ] }] };
+          var acts = ['2000-01-01', '2000-01-02'].map(function (d) {
+            return D.buildActivity({ date: d, distanceKm: 5, durationSec: 1500, type: 'run' });
+          });
+          var s = D.calculateStreak({ '2000-01': plan }, acts);
+          eq(s.current, 0);
+          eq(s.longest, 2);
+        });
+
+        /* --------------------------------------------------------- points */
+        describe('Reward points (story 18)');
+        it('awards nothing for walks', function () {
+          reset();
+          GR.update(function (st) {
+            st.activities = [D.buildActivity({ date: MK + '-02', distanceKm: 10, durationSec: 7200, type: 'walk' })];
+          }, { silent: true });
+          eq(D.calculatePoints(GR.getState()).balance, 0);
+        });
+        it('awards points per verified run kilometre', function () {
+          reset();
+          GR.update(function (st) {
+            st.activities = [D.buildActivity({ date: MK + '-02', distanceKm: 10, durationSec: 3000, type: 'run' })];
+          }, { silent: true });
+          eq(D.calculatePoints(GR.getState()).balance, 10 * D.POINTS_RULE.perKm);
+        });
+
+        /* --------------------------------------------------- action layer */
+        describe('Action layer end to end');
+        it('saves one goal per month and replaces in place', function () {
+          reset();
+          GR.actions.saveGoal({ monthKey: MK, targetKm: 100, unit: 'km' });
+          var id = GR.getState().goals[MK].id;
+          GR.actions.saveGoal({ monthKey: MK, targetKm: 120, unit: 'km' });
+          eq(Object.keys(GR.getState().goals).length, 1);
+          eq(GR.getState().goals[MK].targetKm, 120);
+          eq(GR.getState().goals[MK].id, id);
+        });
+        it('deletes the plan along with the goal', function () {
+          reset();
+          GR.actions.saveGoal({ monthKey: MK, targetKm: 100, unit: 'km' });
+          GR.actions.savePlan(D.generatePlan({ monthKey: MK, targetKm: 100, runDaysPerWeek: 4, style: 'even' }));
+          GR.actions.deleteGoal(MK);
+          assert(!GR.getState().goals[MK] && !GR.getState().plans[MK]);
+        });
+        it('de-duplicates a repeated sync', function () {
+          reset();
+          GR.actions.connectProvider('strava');
+          var first = GR.actions.syncProvider('strava', MK);
+          var second = GR.actions.syncProvider('strava', MK);
+          assert(first.imported > 0);
+          eq(second.imported, 0);
+        });
+        it('de-duplicates across two providers', function () {
+          reset();
+          GR.actions.connectProvider('strava');
+          GR.actions.syncProvider('strava', MK);
+          GR.actions.connectProvider('garmin');
+          assert(GR.actions.syncProvider('garmin', MK).skipped > 0);
+        });
+        it('can drop imported activities on disconnect', function () {
+          reset();
+          GR.actions.connectProvider('strava');
+          GR.actions.syncProvider('strava', MK);
+          assert(GR.getState().activities.length > 0);
+          GR.actions.disconnectProvider('strava', true);
+          eq(GR.getState().activities.length, 0);
+        });
+        it('keeps imported activities when asked to', function () {
+          reset();
+          GR.actions.connectProvider('strava');
+          GR.actions.syncProvider('strava', MK);
+          var n = GR.getState().activities.length;
+          GR.actions.disconnectProvider('strava', false);
+          eq(GR.getState().activities.length, n);
+        });
+        it('flags a corrected activity and keeps the original type', function () {
+          reset();
+          GR.actions.connectProvider('strava');
+          GR.actions.syncProvider('strava', MK);
+          var walk = GR.getState().activities.filter(function (a) { return a.type === 'walk'; })[0];
+          assert(walk, 'expected the sample feed to contain a walk');
+          GR.actions.setActivityType(walk.id, 'run');
+          var after = GR.getState().activities.filter(function (a) { return a.id === walk.id; })[0];
+          eq(after.type, 'run');
+          eq(after.corrected, true);
+          eq(after.autoType, 'walk');
+        });
+        it('keeps a correction through a later re-sync', function () {
+          reset();
+          GR.actions.connectProvider('strava');
+          GR.actions.syncProvider('strava', MK);
+          var walk = GR.getState().activities.filter(function (a) { return a.type === 'walk'; })[0];
+          GR.actions.setActivityType(walk.id, 'run');
+          GR.actions.syncProvider('strava', MK);
+          var after = GR.getState().activities.filter(function (a) { return a.id === walk.id; })[0];
+          eq(after.type, 'run');
+          eq(after.corrected, true);
+        });
+        it('revokes a badge when its achievement is undone', function () {
+          reset();
+          GR.actions.addActivity({ date: D.todayKey(), distanceKm: 5, durationSec: 1500, type: 'run' });
+          assert(GR.select.derive().badges.filter(function (b) { return b.id === 'first-steps'; })[0].earned);
+          GR.actions.deleteActivity(GR.getState().activities[0].id);
+          assert(!GR.select.derive().badges.filter(function (b) { return b.id === 'first-steps'; })[0].earned);
+        });
+        it('recalculates points when an activity is deleted', function () {
+          reset();
+          GR.actions.addActivity({ date: D.todayKey(), distanceKm: 10, durationSec: 3000, type: 'run' });
+          assert(GR.select.derive().points.balance > 0);
+          GR.actions.deleteActivity(GR.getState().activities[0].id);
+          eq(GR.select.derive().points.balance, 0);
+        });
+        it('always includes the runner on the leaderboard', function () {
+          reset();
+          var rows = D.buildLeaderboard(GR.getState(), 'month');
+          assert(rows.some(function (r) { return r.isSelf; }));
+        });
+        it('honours the leaderboard opt-out', function () {
+          reset();
+          GR.actions.toggleLeaderboardOptOut();
+          assert(D.buildLeaderboard(GR.getState(), 'month').filter(function (r) { return r.isSelf; })[0].optedOut);
+        });
+        it('tracks joining and leaving a challenge', function () {
+          reset();
+          GR.actions.joinChallenge('monthly-100');
+          assert(D.evaluateChallenges(GR.getState()).filter(function (c) { return c.id === 'monthly-100'; })[0].joined);
+          GR.actions.leaveChallenge('monthly-100');
+          assert(!D.evaluateChallenges(GR.getState()).filter(function (c) { return c.id === 'monthly-100'; })[0].joined);
+        });
+        it('persists state across a reload', function () {
+          reset();
+          GR.actions.saveGoal({ monthKey: MK, targetKm: 77, unit: 'km' });
+          GR.storage.load();
+          eq(GR.getState().goals[MK].targetKm, 77);
+        });
+        it('survives corrupt saved data', function () {
+          localStorage.setItem(GR.storage.STORAGE_KEY, '{"goals":{"bad":{"nope":1}},"activities":[{"broken":true}]}');
+          GR.storage.load();
+          eq(Object.keys(GR.getState().goals).length, 0);
+          eq(GR.getState().activities.length, 0);
+        });
+        it('survives unparseable saved data', function () {
+          localStorage.setItem(GR.storage.STORAGE_KEY, 'not json at all');
+          GR.storage.load();
+          eq(Object.keys(GR.getState().goals).length, 0);
+        });
+
+        /* ------------------------------------------------------ reporting */
+        reset();
+
+        var passed = results.filter(function (r) { return r.pass; }).length;
+        var failed = results.length - passed;
+
+        var summary = document.getElementById('summary');
+        summary.className = 'banner ' + (failed ? 'banner--danger' : 'banner--ok');
+        summary.textContent = passed + ' of ' + results.length + ' passed' + (failed ? ' — ' + failed + ' FAILED' : ' — all green');
+
+        var host = document.getElementById('results');
+        var lastGroup = null;
+        results.forEach(function (r) {
+          if (r.group !== lastGroup) {
+            lastGroup = r.group;
+            var g = document.createElement('p');
+            g.className = 'grp';
+            g.textContent = r.group;
+            host.appendChild(g);
+          }
+          var row = document.createElement('div');
+          row.className = 't t--' + (r.pass ? 'pass' : 'fail');
+          var mark = document.createElement('span');
+          mark.textContent = r.pass ? '✓' : '✗';
+          var name = document.createElement('span');
+          name.className = 't__name';
+          name.textContent = r.name;
+          var detail = document.createElement('span');
+          detail.className = 't__detail';
+          detail.textContent = r.detail;
+          row.appendChild(mark);
+          row.appendChild(name);
+          row.appendChild(detail);
+          host.appendChild(row);
+        });
+
+        window.__TEST_RESULTS__ = { total: results.length, passed: passed, failed: failed, results: results };
+      })();
+    </script>
+  </body>
+</html>

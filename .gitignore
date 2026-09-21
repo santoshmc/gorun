@@ -1,0 +1,15 @@
+# Dependencies and build output from the superseded React/Vite build
+node_modules
+dist
+tsconfig.tsbuildinfo
+
+# Local environment
+*.local
+.env
+.env.*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.idea
+*.swp

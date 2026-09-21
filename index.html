@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>GoRun — monthly running goals</title>
+    <meta name="description" content="Set a monthly running distance goal, get a weekly training plan, and track every run — entirely on your device." />
+    <meta name="theme-color" content="#fff8f2" />
+    <meta name="color-scheme" content="light" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="GoRun" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="backdrop" aria-hidden="true">
+      <span class="backdrop__blob backdrop__blob--1"></span>
+      <span class="backdrop__blob backdrop__blob--2"></span>
+      <span class="backdrop__blob backdrop__blob--3"></span>
+    </div>
+
+    <header class="app-bar">
+      <div class="app-bar__inner">
+        <a class="brand" href="#main">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="14.5" cy="4.2" r="2" />
+              <path d="M13 8.2 9.4 10l-1.2 4" />
+              <path d="m13 8.2 3.4 2.4.9 3.4" />
+              <path d="m11.4 12.6-.9 4.2 3 3.4" />
+              <path d="m11.4 12.6-3.6 2-2.4-1.4" />
+            </svg>
+          </span>
+          <span class="brand__word">Go<span class="brand__word-accent">Run</span></span>
+        </a>
+
+        <div class="app-bar__tools">
+          <div class="month-switcher" id="month-switcher"></div>
+          <button class="icon-btn" id="install-btn" type="button" hidden aria-label="Install GoRun">
+            <span class="icon-btn__label">Install</span>
+          </button>
+          <button class="icon-btn" id="sound-btn" type="button" aria-pressed="true" aria-label="Toggle sound effects"></button>
+          <button class="icon-btn" id="settings-btn" type="button" aria-label="Open settings"></button>
+        </div>
+      </div>
+      <div class="storage-banner" id="storage-banner" hidden></div>
+    </header>
+
+    <main id="main" class="bento" tabindex="-1">
+      <section class="card card--goal bento__goal" id="card-goal" aria-label="Monthly goal"></section>
+      <section class="card card--month bento__month" id="card-month" aria-label="Monthly progress"></section>
+      <section class="card card--streak bento__streak" id="card-streak" aria-label="Running streak"></section>
+      <section class="card card--today bento__today" id="card-today" aria-label="Today"></section>
+      <section class="card card--coach bento__coach" id="card-coach" aria-label="Coaching"></section>
+      <section class="card card--week bento__week" id="card-week" aria-label="Weekly progress"></section>
+      <section class="card card--plan bento__plan" id="card-plan" aria-label="Training plan"></section>
+      <section class="card card--activities bento__activities" id="card-activities" aria-label="Activities"></section>
+      <section class="card card--sources bento__sources" id="card-sources" aria-label="Connected sources"></section>
+      <section class="card card--streakboard bento__badges" id="card-badges" aria-label="Badges"></section>
+      <section class="card card--points bento__points" id="card-points" aria-label="Reward points"></section>
+      <section class="card card--friends bento__friends" id="card-friends" aria-label="Friends"></section>
+      <section class="card card--leaderboard bento__leaderboard" id="card-leaderboard" aria-label="Leaderboard"></section>
+      <section class="card card--challenges bento__challenges" id="card-challenges" aria-label="Community challenges"></section>
+      <section class="card card--history bento__history" id="card-history" aria-label="Goal history"></section>
+    </main>
+
+    <footer class="app-foot">
+      <p>GoRun keeps everything on this device. No account, no server, no tracking.</p>
+    </footer>
+
+    <div id="dialog-root"></div>
+    <div id="toast-root" class="toast-root" aria-live="polite"></div>
+    <div id="fx-root" class="fx-root" aria-hidden="true"></div>
+
+    <script src="app.core.js"></script>
+    <script src="app.domain.js"></script>
+    <script src="app.store.js"></script>
+    <script src="app.ui.core.js"></script>
+    <script src="app.ui.progress.js"></script>
+    <script src="app.ui.social.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
