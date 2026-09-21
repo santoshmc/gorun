@@ -1,10 +1,27 @@
+<div align="center">
+
+![Training exercise](https://img.shields.io/badge/training%20exercise-not%20production-EAB308?style=flat-square)
+![Palo IT Gen2](https://img.shields.io/badge/Palo%20IT-Gen2%20·%20Day%201-FB7185?style=flat-square)
+![Built with AI agents](https://img.shields.io/badge/built%20with-AI%20agents-A5B4FC?style=flat-square)
+![Vanilla JS](https://img.shields.io/badge/vanilla%20JS-zero%20dependencies-86EFAC?style=flat-square)
+
+**🎓 This is a training artefact, not a product.**
+
+Built in a single day as the Day 1 exercise of the **Palo IT Gen2 programme**, working end-to-end with **AI coding agents**.
+The point of the exercise was the *workflow* — meeting transcript → user stories → implementation plans → working software —
+not the running app itself. It lives here as a record of that experiment.
+
+</div>
+
+---
+
 # GoRun
 
 A monthly running-goal tracker that turns a single number — *"100 km this month"* — into a weekly training plan, tracks every run against it, and keeps the whole thing on your device.
 
 No account. No server. No build step. No dependencies. Open `index.html` in a browser and it works.
 
-> **Context:** built as the Day 1 exercise of the **Palo IT Gen2 training programme**. The goal of the exercise was not really "ship a running app" — it was to practise a **spec-driven, AI-assisted delivery workflow**: meeting transcript → user stories → implementation plans → working software, with the plans as the contract throughout.
+> **How it was made:** every line was produced through **agentic AI development** — an orchestrating agent plus specialised sub-agents that planned, wrote and reviewed the code, with the acceptance criteria in [`docs/stories/`](docs/stories/) acting as the contract. Roughly **8,200 lines across 13 files**, including a mid-project rewrite from React to vanilla JS. The [pivot](#the-pivot-why-this-is-vanilla-js-and-not-react) and [what I'd do differently](#what-id-do-differently) sections are the honest bits.
 
 ---
 
