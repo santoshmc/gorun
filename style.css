@@ -905,6 +905,33 @@ select {
   text-align: center;
 }
 
+.app-foot__note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 620px;
+  margin: 10px auto 0;
+  padding-top: 10px;
+  border-top: 2px dashed var(--ink-faint);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.app-foot__tag {
+  padding: 3px 9px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--c-yellow);
+  color: var(--ink);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+}
+
 /* ----------------------------------------------------- month switcher */
 .month-switcher { display: flex; align-items: center; gap: 4px; }
 .month-switcher__label {
