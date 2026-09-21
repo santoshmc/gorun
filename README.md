@@ -8,11 +8,29 @@ No account. No server. No build step. No dependencies. Open `index.html` in a br
 
 ---
 
-## Live demo
+## Running the demo
 
-**https://santoshmc.github.io/gorun/**
+This repository is **private**, so there is no GitHub Pages URL. There doesn't need to be — the app has no build step and no dependencies:
 
-The app is installable as a PWA and works fully offline once loaded.
+```bash
+git clone https://github.com/santoshmc/gorun.git
+cd gorun
+open index.html          # macOS — that's it
+```
+
+Everything works straight from `file://`: goals, plans, activity import, progress, streaks, badges, sharing. Nothing to install.
+
+Two features need an `http(s)` origin rather than `file://` — **PWA install** and **service-worker offline caching**. To see those:
+
+```bash
+python3 -m http.server 8099
+# open http://127.0.0.1:8099/
+```
+
+> To get a permanent shareable link instead, make the repo public and turn on
+> **Settings → Pages → Deploy from a branch → `main` → `/ (root)`**. It would then be
+> live at `https://santoshmc.github.io/gorun/` with no other changes, since every path
+> in the app is relative.
 
 ---
 
@@ -224,30 +242,17 @@ Every one of those choices serves the same constraint: the app must be a handful
 
 ## Running it
 
-### Simplest — no tooling
-
-```bash
-open index.html      # macOS
-```
-
-Everything works from `file://`: goals, plans, activity import, progress, badges, sharing.
-
-### For PWA install and offline caching
-
-Service workers require an `http(s)` origin, so serve the folder:
-
-```bash
-python3 -m http.server 8099
-# then open http://127.0.0.1:8099/
-```
-
-The app detects `file://` and skips service-worker registration rather than throwing.
+See [Running the demo](#running-the-demo) at the top for the clone-and-open instructions.
 
 ### Seeing it populated
 
 **Settings (⚙) → "Fill this month with sample data"** sets a goal, generates a plan, connects a demo source, imports activities, adds a friend and joins a challenge — so every panel has something to show. Erase it any time from the same menu.
 
 The provider feed is **deterministic**, seeded per month, so re-syncing returns the same sessions and de-duplication is observable rather than theoretical.
+
+### A note on `file://`
+
+The app detects `file://` and skips service-worker registration rather than throwing, so opening it from disk degrades gracefully instead of erroring. Nothing else is affected.
 
 ---
 
