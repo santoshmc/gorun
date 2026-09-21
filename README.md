@@ -5,6 +5,8 @@
 ![Built with AI agents](https://img.shields.io/badge/built%20with-AI%20agents-A5B4FC?style=flat-square)
 ![Vanilla JS](https://img.shields.io/badge/vanilla%20JS-zero%20dependencies-86EFAC?style=flat-square)
 
+[![Live demo](https://img.shields.io/badge/▶%20live%20demo-santoshmc.github.io%2Fgorun-1F1A24?style=for-the-badge)](https://santoshmc.github.io/gorun/)
+
 **🎓 This is a training artefact, not a product.**
 
 Built in a single day as the Day 1 exercise of the **Palo IT Gen2 programme**, working end-to-end with **AI coding agents**.
@@ -25,9 +27,15 @@ No account. No server. No build step. No dependencies. Open `index.html` in a br
 
 ---
 
-## Running the demo
+## ▶ Try it
 
-This repository is **private**, so there is no GitHub Pages URL. There doesn't need to be — the app has no build step and no dependencies:
+### **[santoshmc.github.io/gorun](https://santoshmc.github.io/gorun/)**
+
+Opens instantly, works on a phone, and is **installable as a PWA** — once loaded it runs with no network at all.
+
+> First visit? Hit **Settings (⚙) → "Fill this month with sample data"** to populate every panel in one click.
+
+Or run it from source — no build step, no dependencies:
 
 ```bash
 git clone https://github.com/santoshmc/gorun.git
@@ -35,24 +43,20 @@ cd gorun
 open index.html          # macOS — that's it
 ```
 
-Everything works straight from `file://`: goals, plans, activity import, progress, streaks, badges, sharing. Nothing to install.
+Everything works straight from `file://` too: goals, plans, activity import, progress, streaks, badges, sharing. Nothing to install.
 
-Two features need an `http(s)` origin rather than `file://` — **PWA install** and **service-worker offline caching**. To see those:
+The only things `file://` can't do are **PWA install** and **service-worker offline caching**, since both need an `http(s)` origin — the hosted link above has them. Locally:
 
 ```bash
 python3 -m http.server 8099
 # open http://127.0.0.1:8099/
 ```
 
-> To get a permanent shareable link instead, make the repo public and turn on
-> **Settings → Pages → Deploy from a branch → `main` → `/ (root)`**. It would then be
-> live at `https://santoshmc.github.io/gorun/` with no other changes, since every path
-> in the app is relative.
-
 ---
 
 ## Table of contents
 
+- [Try it](#-try-it)
 - [What the project was about](#what-the-project-was-about)
 - [The workflow: transcript → stories → plans → code](#the-workflow-transcript--stories--plans--code)
 - [The pivot: why this is vanilla JS and not React](#the-pivot-why-this-is-vanilla-js-and-not-react)
@@ -259,7 +263,7 @@ Every one of those choices serves the same constraint: the app must be a handful
 
 ## Running it
 
-See [Running the demo](#running-the-demo) at the top for the clone-and-open instructions.
+See [Try it](#-try-it) at the top for the live link and the clone-and-open instructions.
 
 ### Seeing it populated
 
