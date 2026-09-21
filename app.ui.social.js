@@ -32,7 +32,7 @@
       .split(/\s+/)
       .filter(Boolean);
     if (!parts.length) return '?';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    if (parts.length === 1) return parts[0][0].toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 
@@ -483,7 +483,7 @@
           'div.card__actions',
           {},
           h(
-            'button.btn.btn--primary.btn--sm',
+            'button.btn.btn--secondary.btn--sm',
             {
               type: 'button',
               onclick: function () {
@@ -761,8 +761,7 @@
       h(
         'div.row__main',
         {},
-        h('p.row__title', {}, h('span', { text: name }), row.isSelf && optedOut ? h('span.chip.chip--muted', { text: 'You' }) : null),
-        h('p.row__meta', { text: 'Rank ' + row.rank })
+        h('p.row__title', {}, h('span', { text: name }), row.isSelf && optedOut ? h('span.chip.chip--muted', { text: 'You' }) : null)
       ),
       h('div.row__end', {}, h('span.stat__value--sm', { text: D.formatKm(row.km, unit) }))
     );
@@ -836,7 +835,7 @@
               'Just you so far',
               'Invite a friend and their weekly and monthly distances appear here alongside yours.',
               h(
-                'button.btn.btn--primary.btn--sm',
+                'button.btn.btn--secondary.btn--sm',
                 {
                   type: 'button',
                   onclick: function () {
@@ -848,7 +847,6 @@
               )
             ),
         hint('Only activities classified as runs count towards the ranking — walks and other activities are ignored.'),
-        hint(SIM_NOTE + ' Friend distances come from seeded fixture data.'),
         h(
           'div.banner__actions',
           {},
@@ -992,7 +990,7 @@
             'div.banner__actions',
             {},
             h(
-              'button.btn.btn--primary.btn--sm',
+              'button.btn.btn--secondary.btn--sm',
               {
                 type: 'button',
                 'aria-label': 'Join ' + challenge.name,

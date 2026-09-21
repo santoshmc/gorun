@@ -161,10 +161,16 @@
       statBox('Target', D.formatKm(month.targetKm, unit, { bare: true }), D.unitLabel(unit)),
       statBox('Remaining', D.formatKm(month.remainingKm, unit, { bare: true }), D.unitLabel(unit))
     ];
-    if (showForecast) {
-      stats.push(statBox('Days left', month.daysLeft, month.daysLeft === 1 ? 'day' : 'days'));
-      stats.push(statBox('Daily average needed', D.formatKm(month.dailyAverageNeededKm, unit, { bare: true }), D.unitLabel(unit)));
-    }
+
+    var forecast = showForecast
+      ? h('p.field__hint', {
+          text:
+            month.daysLeft +
+            (month.daysLeft === 1 ? ' day left — ' : ' days left — ') +
+            D.formatKm(month.dailyAverageNeededKm, unit) +
+            ' a day to finish on target.'
+        })
+      : null;
 
     var outcome = null;
     if (month.achieved) {
@@ -204,11 +210,9 @@
                 D.formatKm(month.actualKm, unit) +
                 ' of ' +
                 D.formatKm(month.targetKm, unit) +
-                ' — ' +
-                month.percent +
-                '% complete.'
+                ' run this month.'
             }),
-            meter(month.percent)
+            forecast
           )
         ),
         h('div.stat-grid.stat-grid--tight', {}, stats),
@@ -256,39 +260,55 @@
             text: streak.current === 1 ? 'One planned run down. Keep it rolling.' : streak.current + ' planned runs in a row.'
           });
 
+    var hasPlan = !!derived.plan;
+
     GR.mount(GR.$('#card-streak'), [
       head('Streak', 'flame'),
-      body([
-        h(
-          'div',
-          { style: { display: 'flex', gap: '20px', 'align-items': 'flex-end', 'flex-wrap': 'wrap' } },
-          h(
-            'div.stat',
-            {},
-            h(
-              'span.stat__value.stat__value--xl',
-              {},
-              String(streak.current),
-              h('span.stat__unit', { text: streak.current === 1 ? ' day' : ' days' })
-            ),
-            h('span.stat__label', { text: 'Current streak' })
-          ),
-          h(
-            'div.stat',
-            {},
-            h(
-              'span.stat__value.stat__value--sm',
-              {},
-              String(streak.longest || 0),
-              h('span.stat__unit', { text: (streak.longest === 1 ? ' day' : ' days') })
-            ),
-            h('span.stat__label', { text: 'Longest streak' })
-          )
-        ),
-        headline,
-        h('div', { style: { display: 'flex', gap: '6px', 'flex-wrap': 'wrap' }, 'aria-label': 'Last seven days' }, markers),
-        h('p.field__hint', { text: 'Rest days never break a streak. Missing a planned run resets it to zero.' })
-      ])
+      body(
+        hasPlan
+          ? [
+              h(
+                'div',
+                { style: { display: 'flex', gap: '20px', 'align-items': 'flex-end', 'flex-wrap': 'wrap' } },
+                h(
+                  'div.stat',
+                  {},
+                  h(
+                    'span.stat__value.stat__value--xl',
+                    {},
+                    String(streak.current),
+                    h('span.stat__unit', { text: streak.current === 1 ? ' day' : ' days' })
+                  ),
+                  h('span.stat__label', { text: 'Current streak' })
+                ),
+                h(
+                  'div.stat',
+                  {},
+                  h(
+                    'span.stat__value.stat__value--sm',
+                    {},
+                    String(streak.longest || 0),
+                    h('span.stat__unit', { text: streak.longest === 1 ? ' day' : ' days' })
+                  ),
+                  h('span.stat__label', { text: 'Longest streak' })
+                )
+              ),
+              headline,
+              h('div.day-strip', { 'aria-label': 'Last seven days' }, markers),
+              h('p.field__hint', { text: 'Rest days never break a streak. Missing a planned run resets it to zero.' })
+            ]
+          : [
+              h(
+                'div.empty',
+                {},
+                h('span.empty__icon', {}, icon('flame', { size: 22 })),
+                h('p.empty__title', { text: 'No streak yet' }),
+                h('p.empty__text', {
+                  text: 'Once you have a training plan, every planned run you complete builds your streak. Rest days never break it.'
+                })
+              )
+            ]
+      )
     ]);
   }
 

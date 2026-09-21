@@ -406,15 +406,31 @@
           action: readOnly
             ? null
             : h(
-                'button.btn.btn--primary',
-                {
-                  type: 'button',
-                  onclick: function () {
-                    openGoalDialog(null);
-                  }
-                },
-                icon('plus', { size: 16 }),
-                'Set goal'
+                'div.empty__actions',
+                {},
+                h(
+                  'button.btn.btn--primary',
+                  {
+                    type: 'button',
+                    onclick: function () {
+                      openGoalDialog(null);
+                    }
+                  },
+                  icon('plus', { size: 16 }),
+                  'Set goal'
+                ),
+                h(
+                  'button.btn.btn--ghost',
+                  {
+                    type: 'button',
+                    title: 'Fills the month with a goal, a plan and imported activities so you can see every panel working',
+                    onclick: function () {
+                      if (typeof GR.seedDemoData === 'function') GR.seedDemoData();
+                    }
+                  },
+                  icon('sparkle', { size: 16 }),
+                  'See it with sample data'
+                )
               )
         })
       );
@@ -428,31 +444,25 @@
           'div.stat',
           {},
           h('span.stat__value.stat__value--xl', { text: D.formatKm(goal.targetKm, unit) }),
-          h('span.stat__label', { text: D.formatMonthLabel(goal.monthKey) })
+          h('span.stat__label', { text: 'Target for ' + D.formatMonthLabel(goal.monthKey) })
         )
       );
 
-      if (derived.month) {
+      // Progress deliberately lives in the "This month" card, not here.
+      if (derived.plan) {
         body.appendChild(
           h(
-            'div.row.row--sunk',
+            'div.row__meta',
             {},
-            h(
-              'div.row__main',
-              {},
-              h('p.row__title', { text: D.formatKm(derived.month.actualKm, unit) + ' run so far' }),
-              h(
-                'div.row__meta',
-                {},
-                chip({ text: derived.month.percent + '% of target', variant: 'chip--muted' }),
-                chip({
-                  text: derived.month.achieved
-                    ? 'Goal reached'
-                    : D.formatKm(derived.month.remainingKm, unit) + ' to go',
-                  variant: derived.month.achieved ? 'chip--ok' : 'chip--muted'
-                })
-              )
-            )
+            chip({
+              text: derived.plan.runDaysPerWeek + ' runs a week',
+              variant: 'chip--muted',
+              icon: 'calendar'
+            }),
+            chip({
+              text: D.formatKm(D.planTotals(derived.plan).monthlyTotal, unit) + ' planned',
+              variant: derived.mismatch && derived.mismatch.isMismatch ? 'chip--warn' : 'chip--muted'
+            })
           )
         );
       }
@@ -1468,7 +1478,7 @@
     } else {
       end.appendChild(
         h(
-          'button.btn.btn--primary.btn--sm',
+          'button.btn.btn--secondary.btn--sm',
           {
             type: 'button',
             onclick: function () {

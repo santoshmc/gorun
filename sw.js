@@ -2,7 +2,7 @@
  * Cache-first app shell so the installed app works with no network at all.
  * Only active over http(s); the app also runs straight from file:// without it.
  */
-var CACHE = 'gorun-v2';
+var CACHE = 'gorun-v3';
 
 var SHELL = [
   './',

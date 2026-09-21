@@ -293,9 +293,25 @@
 
   /* ------------------------------------------------------------- chrome */
 
+  /**
+   * Cards that cannot do anything useful until a goal exists are dimmed,
+   * so the empty dashboard points at the one action that matters.
+   */
+  var GOAL_DEPENDENT_CARDS = ['month', 'streak', 'today', 'week', 'plan', 'badges', 'points', 'leaderboard', 'challenges', 'history'];
+
+  function applyFocusState() {
+    var hasGoal = !!GR.select.derive().goal;
+    GOAL_DEPENDENT_CARDS.forEach(function (name) {
+      var card = GR.$('#card-' + name);
+      if (card) card.classList.toggle('card--dormant', !hasGoal);
+    });
+    document.body.classList.toggle('is-first-run', !hasGoal);
+  }
+
   function renderChrome() {
     renderMonthSwitcher();
     renderSoundButton();
+    applyFocusState();
   }
 
   /* --------------------------------------------------------------- boot */
@@ -327,6 +343,10 @@
       GR.select.invalidate();
       renderChrome();
     });
+
+    // Actions commit silently and then call renderAll, so the chrome has to be
+    // part of that pass or the header would only ever render once, at boot.
+    GR.registerPanel('chrome', renderChrome);
 
     setupInstall();
     setupServiceWorker();

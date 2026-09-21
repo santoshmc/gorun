@@ -204,6 +204,19 @@ select {
 }
 .brand__word-accent { color: var(--c-coral); }
 
+.brand__tagline {
+  display: none;
+  padding-left: 12px;
+  margin-left: 2px;
+  border-left: 2px solid var(--ink-faint);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+@media (min-width: 900px) {
+  .brand__tagline { display: inline-block; }
+}
+
 .app-bar__tools {
   display: flex;
   align-items: center;
@@ -334,7 +347,7 @@ select {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--gap);
-  align-items: start;
+  align-items: stretch; /* equal-height rows — otherwise the grid leaves large holes */
 }
 .bento:focus { outline: none; }
 
@@ -355,6 +368,26 @@ select {
 @keyframes card-in {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
+}
+
+/* Nothing to show until a goal exists — recede rather than compete. */
+.card--dormant {
+  opacity: 0.58;
+  box-shadow: 3px 3px 0 0 #e6ded6;
+  transition: opacity 0.25s ease;
+}
+.card--dormant:hover,
+.card--dormant:focus-within { opacity: 1; }
+
+/* A dashed box inside an already-empty card is just a second border. */
+.card--dormant .empty {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.is-first-run .card--goal {
+  box-shadow: var(--shadow-lg);
 }
 
 .card--goal { --accent: var(--c-salmon); }
@@ -390,7 +423,12 @@ select {
 }
 .card__title .icon { width: 18px; height: 18px; color: var(--ink); }
 .card__actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
-.card__body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card__body { display: flex; flex-direction: column; gap: 12px; min-width: 0; flex: 1 1 auto; }
+
+/* Equal-height rows leave slack in the lighter cards; centre it rather than
+   letting it pool at the bottom. */
+.card--goal .card__body,
+.card--streak .card__body { justify-content: center; }
 .card__error {
   display: flex;
   align-items: center;
@@ -578,6 +616,20 @@ select {
 @keyframes bob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 .empty__title { font-size: 1rem; font-weight: 800; }
 .empty__text { font-size: 0.88rem; color: var(--ink-soft); }
+.empty__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+
+/* Seven day markers, one per column, so a week always reads as a week. */
+.day-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+.day-strip .chip {
+  justify-content: center;
+  padding: 5px 2px;
+  font-size: 0.6rem;
+  letter-spacing: 0.02em;
+}
 
 /* --------------------------------------------------------------- fields */
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
