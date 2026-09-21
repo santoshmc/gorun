@@ -196,7 +196,7 @@
                   tone: 'danger'
                 }).then(function (ok) {
                   if (!ok) return;
-                  GR.actions.resetEverything();
+                  startFresh();
                   instance.close('reset');
                 });
               }
@@ -228,7 +228,8 @@
   /* ------------------------------------------------------------ demo data */
 
   /** Gives every panel something to show without the runner typing anything. */
-  function seedDemoData() {
+  function seedDemoData(options) {
+    var opts = options || {};
     var monthKey = GR.select.activeMonthKey(GR.getState());
     var unit = GR.getState().settings.unit;
 
@@ -245,7 +246,76 @@
 
     GR.actions.joinChallenge('monthly-100');
 
-    GR.toast('Sample month loaded', { tone: 'success', icon: 'sparkle', detail: 'Erase it any time from Settings.' });
+    GR.actions.commit(function (state) {
+      state.settings.demoSeeded = true;
+      state.settings.onboarded = true;
+    });
+
+    if (!opts.silent) {
+      GR.toast('Sample data loaded', { tone: 'success', icon: 'sparkle', detail: 'Clear it any time to start fresh.' });
+    }
+  }
+
+  /** Wipes everything but remembers the runner has been here, so it stays empty. */
+  function startFresh() {
+    GR.storage.reset();
+    GR.select.invalidate();
+    GR.update(function (state) {
+      state.settings.onboarded = true;
+      state.settings.demoSeeded = false;
+    }, { silent: true });
+    GR.select.invalidate();
+    GR.renderAll();
+    GR.play('swoosh');
+    GR.toast('Cleared — the dashboard is yours now', { tone: 'info', icon: 'sparkle', sound: false });
+  }
+
+  /** A blank dashboard is a poor first impression, so populate it once. */
+  function seedOnFirstVisit() {
+    var state = GR.getState();
+    var untouched =
+      !state.settings.onboarded &&
+      !Object.keys(state.goals).length &&
+      !state.activities.length;
+
+    if (untouched) seedDemoData({ silent: true });
+  }
+
+  function renderDemoBanner() {
+    var host = GR.$('#demo-banner');
+    if (!host) return;
+
+    if (!GR.getState().settings.demoSeeded) {
+      host.hidden = true;
+      GR.clear(host);
+      return;
+    }
+
+    host.hidden = false;
+    GR.mount(
+      host,
+      h(
+        'div.banner.banner--info',
+        {},
+        icon('sparkle'),
+        h(
+          'div.banner__body',
+          {},
+          h('strong', { text: 'You are looking at sample data.' }),
+          ' A goal, a training plan and a month of imported runs, so every panel has something to show.',
+          h(
+            'div.banner__actions',
+            {},
+            h(
+              'button.btn.btn--sm',
+              { type: 'button', onclick: startFresh },
+              icon('refresh', { size: 14 }),
+              'Clear it and start fresh'
+            )
+          )
+        )
+      )
+    );
   }
 
   /* --------------------------------------------------------- PWA install */
@@ -311,6 +381,7 @@
   function renderChrome() {
     renderMonthSwitcher();
     renderSoundButton();
+    renderDemoBanner();
     applyFocusState();
   }
 
@@ -350,6 +421,8 @@
 
     setupInstall();
     setupServiceWorker();
+
+    seedOnFirstVisit();
 
     renderChrome();
     GR.renderAll();

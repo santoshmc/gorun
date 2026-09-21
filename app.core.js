@@ -83,7 +83,8 @@
         leaderboardOptOut: false,
         remindersEnabled: false,
         reminderFrequency: 'planned-days',
-        onboarded: false
+        onboarded: false,
+        demoSeeded: false
       },
       goals: {},
       plans: {},
@@ -111,6 +112,7 @@
       if (typeof s.remindersEnabled === 'boolean') base.settings.remindersEnabled = s.remindersEnabled;
       if (typeof s.reminderFrequency === 'string') base.settings.reminderFrequency = s.reminderFrequency;
       if (typeof s.onboarded === 'boolean') base.settings.onboarded = s.onboarded;
+      if (typeof s.demoSeeded === 'boolean') base.settings.demoSeeded = s.demoSeeded;
     }
 
     if (raw.goals && typeof raw.goals === 'object') {
